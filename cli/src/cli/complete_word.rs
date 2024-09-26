@@ -43,13 +43,16 @@ impl CompleteWord {
         let choices = self.complete_word(&spec)?;
         let shell = self.shell.as_deref().unwrap_or_default();
         let any_descriptions = choices.iter().any(|(_, d)| !d.is_empty());
-        for (c, description) in choices {
-            match (any_descriptions, shell) {
-                (true, "bash") => println!("{c}"),
-                (true, "fish") => println!("{c}\t{description}"),
-                (true, "zsh") => println!("{c}\\:'{description}'"),
-                (_, "fig") => self.generate_fig_script(&spec)?,
-                _ => println!("{c}"),
+        if shell == "fig" {
+            self.generate_fig_script(&spec)?;
+        } else {
+            for (c, description) in choices {
+                match (any_descriptions, shell) {
+                    (true, "bash") => println!("{c}"),
+                    (true, "fish") => println!("{c}\t{description}"),
+                    (true, "zsh") => println!("{c}\\:'{description}'"),
+                    _ => println!("{c}"),
+                }
             }
         }
 
@@ -247,8 +250,8 @@ impl CompleteWord {
         script.push_str("const completionSpec: Fig.Spec = {\n");
         script.push_str(&format!("  name: \"{}\",\n", spec.cmd.name));
         script.push_str(&format!(
-            "  description: \"{}\",\n",
-            spec.cmd.help.as_deref().unwrap_or("")
+            "  description: `{}`,\n",
+            Self::escape_string(spec.cmd.help.as_deref().unwrap_or(""))
         ));
 
         // サブコマンドを追加
@@ -282,19 +285,19 @@ impl CompleteWord {
         script.push_str(&format!(
             "{}{{
           name: \"{}\",
-          description: \"{}\",\n",
+          description: `{}`,\n",
             indent_str,
             cmd.name,
-            cmd.help.as_deref().unwrap_or("")
+            Self::escape_string(cmd.help.as_deref().unwrap_or(""))
         ));
 
         // サブコマンドの引数を追加
         if !cmd.args.is_empty() {
-            script.push_str(&format!("{}  args: {{\n", indent_str));
+            script.push_str(&format!("{}  args: [\n", indent_str));
             for arg in &cmd.args {
                 self.add_arg_to_script(script, arg, indent + 2)?;
             }
-            script.push_str(&format!("{}  }},\n", indent_str));
+            script.push_str(&format!("{}  ],\n", indent_str));
         }
 
         // サブコマンドのオプションを追加
@@ -320,7 +323,7 @@ impl CompleteWord {
         script.push_str(&format!(
             "{}{{
           name: [{}],
-          description: \"{}\",\n",
+          description: `{}`,\n",
             indent_str,
             flag.short
                 .iter()
@@ -328,7 +331,7 @@ impl CompleteWord {
                 .chain(flag.long.iter().map(|l| format!("\"--{}\"", l)))
                 .collect::<Vec<_>>()
                 .join(", "),
-            flag.help.as_deref().unwrap_or("")
+            Self::escape_string(flag.help.as_deref().unwrap_or(""))
         ));
 
         if flag.arg.is_some() {
@@ -351,16 +354,21 @@ impl CompleteWord {
         script.push_str(&format!(
             "{}{{
           name: \"{}\",
-          description: \"{}\",\n",
+          description: `{}`,\n",
             indent_str,
             arg.name,
-            arg.help.as_deref().unwrap_or("")
+            Self::escape_string(arg.help.as_deref().unwrap_or(""))
         ));
 
         // 引数の追加情報（必須かどうかなど）を追加
 
         script.push_str(&format!("{}}},\n", indent_str));
         Ok(())
+    }
+    // 文字列をエスケープする関数
+    fn escape_string(s: &str) -> String {
+        s.replace('`', "\\`")
+        .replace('"', "\\\"")
     }
 }
 
