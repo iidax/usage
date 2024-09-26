@@ -1,17 +1,27 @@
-# Usage
+# Usage (Unofficial Fork with Fig Support)
 
-Usage is a spec and CLI for defining CLI tools. Arguments, flags, environment variables, and config files
-can all be defined in a Usage spec. It can be thought of like [OpenAPI (swagger)](https://www.openapis.org/)
-for CLIs. Here are some potential reasons for defining your CLI with a Usage spec:
+This is an unofficial, forked version of [Usage](https://usage.jdx.dev/), a spec and CLI for defining CLI tools. This fork extends the original project by adding support for [Fig](https://fig.io/), a CLI tool with its own unique completion system. Please note that this is not affiliated with or endorsed by the original Usage project or Fig.
 
-- Generate autocompletion scripts
-- Generate markdown documentation
-- Generate man pages
-- Use an advanced arg parser in any language
-- Scaffold one spec into different CLI frameworks—even different languages
-- [coming soon] Host your CLI documentation on usage.sh
+## New Feature:
 
-See more at [usage.jdx.dev](https://usage.jdx.dev/).
+- Generate TypeScript completion scripts for Fig from [KDL](https://kdl.dev/) files
+
+This project aims to bridge the gap between various CLI definition formats and Fig's completion system, which requires TypeScript scripts instead of traditional shell scripts.
+
+You can generate a TypeScript script using the following command:
+```shell
+$ cargo run -- complete-word --shell fig --file ./examples/mise.usage.kdl
+```
+
+Please note that this feature is currently under development and may be subject to changes.
+
+## Original Features:
+
+- Generate shell completions for any shell
+- Generate --help docs, markdown, and manpage documentation
+- Write scripts in bash or any other language with modern arg parsing, help, and completions
 
 > [!WARNING]
 > This is beta software and may have breaking changes both with the CLI and schema design. You've been warned.
+
+For more information about the original project, please visit [usage.jdx.dev](https://usage.jdx.dev/).
