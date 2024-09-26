@@ -367,8 +367,7 @@ impl CompleteWord {
     }
     // 文字列をエスケープする関数
     fn escape_string(s: &str) -> String {
-        s.replace('`', "\\`")
-        .replace('"', "\\\"")
+        s.replace('`', "\\`").replace('"', "\\\"")
     }
 }
 
