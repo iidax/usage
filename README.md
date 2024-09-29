@@ -10,7 +10,7 @@ This project aims to bridge the gap between various CLI definition formats and F
 
 You can generate a TypeScript script using the following command:
 ```shell
-$ cargo run -- complete-word --shell fig --file ./examples/mise.usage.kdl
+$ cargo run -- generate fig --file ./examples/mise.usage.kdl
 ```
 
 Please note that this feature is currently under development and may be subject to changes.

@@ -288,9 +288,14 @@ impl CompleteWord {
             String::new()
         };
         let names = if !cmd.aliases.is_empty() {
-            format!("  name: [\"{}\", {}],\n{}", 
-                cmd.name, 
-                cmd.aliases.iter().map(|a| format!("\"{}\"", a)).collect::<Vec<_>>().join(", "),
+            format!(
+                "  name: [\"{}\", {}],\n{}",
+                cmd.name,
+                cmd.aliases
+                    .iter()
+                    .map(|a| format!("\"{}\"", a))
+                    .collect::<Vec<_>>()
+                    .join(", "),
                 indent_str
             )
         } else {
@@ -332,7 +337,7 @@ impl CompleteWord {
             }
             script.push_str(&format!("{}  ], \n", indent_str));
         }
-        
+
         script.push_str(&format!("{}}},\n", indent_str));
         Ok(())
     }
