@@ -248,10 +248,10 @@ impl CompleteWord {
 
         // ヘッダー情報を追加
         script.push_str("const completionSpec: Fig.Spec = {\n");
-        script.push_str(&format!("  name: \"{}\",\n", spec.cmd.name));
+        script.push_str(&format!("  name: \"{}\",\n", spec.name));
         script.push_str(&format!(
             "  description: `{}`,\n",
-            Self::escape_string(spec.cmd.help.as_deref().unwrap_or(""))
+            Self::escape_string(spec.about.as_deref().unwrap_or(""))
         ));
 
         // サブコマンドを追加
