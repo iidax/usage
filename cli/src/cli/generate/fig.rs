@@ -85,16 +85,32 @@ impl Fig {
         } else {
             format!("  name: \"{}\",\n{}", cmd.name, indent_str)
         };
+        let alias_names = if !cmd.aliases.is_empty() {
+            format!(
+                " [aliases: {}]",
+                cmd.aliases
+                    .iter()
+                    .map(|a| format!("{}", a))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+        } else {
+            format!("")
+        };
 
         script.push_str(&format!(
-            "{}{{\n{}{}{}  description: `{}`,\n",
+            "{}{{\n{}{}{}  description: `{}{}`,\n",
             indent_str,
             indent_str,
             display_name,
             names,
-            Self::escape_string(cmd.help.as_deref().unwrap_or(""))
+            Self::escape_string(cmd.help.as_deref().unwrap_or("")),
+            alias_names
         ));
-
+        // オプションを追加
+        if cmd.hide {
+            script.push_str(&format!("{}  hidden: true, \n", indent_str));
+        }
         // サブコマンドの引数を追加
         if !cmd.args.is_empty() {
             script.push_str(&format!("{}  args: [\n", indent_str));
@@ -103,7 +119,6 @@ impl Fig {
             }
             script.push_str(&format!("{}  ],\n", indent_str));
         }
-
         // サブコマンドのオプションを追加
         if !cmd.flags.is_empty() {
             script.push_str(&format!("{}  options: [\n", indent_str));
@@ -112,7 +127,6 @@ impl Fig {
             }
             script.push_str(&format!("{}  ],\n", indent_str));
         }
-
         // サブコマンドのサブコマンドを追加
         if !cmd.subcommands.is_empty() {
             script.push_str(&format!("{}  subcommands: [\n", indent_str));
@@ -134,7 +148,7 @@ impl Fig {
     ) -> miette::Result<()> {
         let indent_str = "  ".repeat(indent);
         script.push_str(&format!(
-            "{}{{\n{}  name: [{}],\n{}  description: `{}`,\n",
+            "{}{{\n{}  name: [{}],\n",
             indent_str,
             indent_str,
             flag.short
@@ -142,11 +156,15 @@ impl Fig {
                 .map(|s| format!("\"-{}\"", s))
                 .chain(flag.long.iter().map(|l| format!("\"--{}\"", l)))
                 .collect::<Vec<_>>()
-                .join(", "),
-            indent_str,
-            Self::escape_string(flag.help.as_deref().unwrap_or(""))
+                .join(", ")
         ));
-
+        if flag.help.is_some() {
+            script.push_str(&format!(
+                "{}  description: `{}`, \n",
+                indent_str,
+                Self::escape_string(flag.help.as_deref().unwrap_or(""))
+            ));
+        }
         if flag.arg.is_some() {
             script.push_str(&format!("{}  args: [\n", indent_str));
             // フラグの引数の詳細を追加
@@ -154,6 +172,12 @@ impl Fig {
                 self.add_arg_to_script(script, arg, indent + 2)?;
             }
             script.push_str(&format!("{}  ],\n", indent_str));
+        }
+        if flag.global {
+            script.push_str(&format!("{}  isPersistent: true, \n", indent_str));
+        }
+        if flag.hide {
+            script.push_str(&format!("{}  hidden: true, \n", indent_str));
         }
 
         script.push_str(&format!("{}}},\n", indent_str));
@@ -168,25 +192,20 @@ impl Fig {
     ) -> miette::Result<()> {
         let indent_str = "  ".repeat(indent);
         script.push_str(&format!(
-            "{}{{\n{}  name: \"{}\",\n{}  description: `{}`,\n",
+            "{}{{\n{}  name: \"{}\",\n",
             indent_str,
             indent_str,
             arg.name,
-            indent_str,
-            Self::escape_string(arg.help.as_deref().unwrap_or(""))
         ));
-
         // 引数の追加情報（必須かどうかなど）を追加
-        if arg.required {
-            script.push_str(&format!("{}  isRequired: true,\n", indent_str));
-        } else {
+        if arg.help.is_some() {
+            script.push_str(&format!("{}  description: `{}`, \n", indent_str, Self::escape_string(arg.help.as_deref().unwrap_or(""))));
+        }
+        if !arg.required {
             script.push_str(&format!("{}  isOptional: true, \n", indent_str));
         }
         if arg.var {
             script.push_str(&format!("{}  isVariadic: true,\n", indent_str));
-        }
-        if arg.hide {
-            script.push_str(&format!("{}  hidden: true, \n", indent_str));
         }
         if let Some(default) = &arg.default {
             script.push_str(&format!("{}  default: \"{}\",\n", indent_str, default));
