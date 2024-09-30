@@ -10,6 +10,10 @@ on:
       - main
       - release-plz
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  NPM_CONFIG_FUND: false
+
 concurrency:
   group: release-plz
 
@@ -25,6 +29,7 @@ jobs:
         with:
           shared-key: test
           save-if: false
+      - uses: taiki-e/install-action@cargo-binstall
       - uses: jdx/mise-action@v2
         with:
           experimental: true

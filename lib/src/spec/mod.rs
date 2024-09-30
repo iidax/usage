@@ -1,18 +1,30 @@
+pub mod arg;
+pub mod choices;
+pub mod cmd;
+pub mod complete;
+pub mod config;
+mod context;
+mod data_types;
+pub mod flag;
+pub mod helpers;
+pub mod mount;
+
 use indexmap::IndexMap;
+use kdl::{KdlDocument, KdlEntry, KdlNode, KdlValue};
+use log::info;
+use serde::Serialize;
 use std::fmt::{Display, Formatter};
 use std::iter::once;
 use std::path::Path;
-
-use kdl::{KdlDocument, KdlEntry, KdlNode, KdlValue};
-use serde::Serialize;
+use std::str::FromStr;
 use xx::file;
 
 use crate::error::UsageErr;
-use crate::parse::cmd::SpecCommand;
-use crate::parse::config::SpecConfig;
-use crate::parse::context::ParsingContext;
-use crate::parse::helpers::NodeHelper;
-use crate::{Complete, SpecArg, SpecFlag};
+use crate::spec::cmd::SpecCommand;
+use crate::spec::config::SpecConfig;
+use crate::spec::context::ParsingContext;
+use crate::spec::helpers::NodeHelper;
+use crate::{SpecArg, SpecComplete, SpecFlag};
 
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct Spec {
@@ -22,11 +34,12 @@ pub struct Spec {
     pub config: SpecConfig,
     pub version: Option<String>,
     pub usage: String,
-    pub complete: IndexMap<String, Complete>,
+    pub complete: IndexMap<String, SpecComplete>,
 
     pub author: Option<String>,
     pub about: Option<String>,
-    pub long_about: Option<String>,
+    pub about_long: Option<String>,
+    pub about_md: Option<String>,
 }
 
 impl Spec {
@@ -42,6 +55,20 @@ impl Spec {
         }
         Ok((schema, body))
     }
+    pub fn parse_script(file: &Path) -> Result<Spec, UsageErr> {
+        let raw = extract_usage_from_comments(&file::read_to_string(file)?);
+        let ctx = ParsingContext::new(file, &raw);
+        let mut spec = Self::parse(&ctx, &raw)?;
+        if spec.bin.is_empty() {
+            spec.bin = file.file_name().unwrap().to_str().unwrap().to_string();
+        }
+        if spec.name.is_empty() {
+            spec.name.clone_from(&spec.bin);
+        }
+        Ok(spec)
+    }
+
+    #[deprecated]
     pub fn parse_spec(input: &str) -> Result<Spec, UsageErr> {
         Self::parse(&Default::default(), input)
     }
@@ -64,11 +91,18 @@ impl Spec {
         for node in kdl.nodes().iter().map(|n| NodeHelper::new(ctx, n)) {
             match node.name() {
                 "name" => schema.name = node.arg(0)?.ensure_string()?,
-                "bin" => schema.bin = node.arg(0)?.ensure_string()?,
+                "bin" => {
+                    schema.bin = node.arg(0)?.ensure_string()?;
+                    if schema.name.is_empty() {
+                        schema.name.clone_from(&schema.bin);
+                    }
+                }
                 "version" => schema.version = Some(node.arg(0)?.ensure_string()?),
                 "author" => schema.author = Some(node.arg(0)?.ensure_string()?),
                 "about" => schema.about = Some(node.arg(0)?.ensure_string()?),
-                "long_about" => schema.long_about = Some(node.arg(0)?.ensure_string()?),
+                "long_about" => schema.about_long = Some(node.arg(0)?.ensure_string()?),
+                "about_long" => schema.about_long = Some(node.arg(0)?.ensure_string()?),
+                "about_md" => schema.about_md = Some(node.arg(0)?.ensure_string()?),
                 "usage" => schema.usage = node.arg(0)?.ensure_string()?,
                 "arg" => schema.cmd.args.push(SpecArg::parse(ctx, &node)?),
                 "flag" => schema.cmd.flags.push(SpecFlag::parse(ctx, &node)?),
@@ -78,7 +112,7 @@ impl Spec {
                 }
                 "config" => schema.config = SpecConfig::parse(ctx, &node)?,
                 "complete" => {
-                    let complete = Complete::parse(ctx, &node)?;
+                    let complete = SpecComplete::parse(ctx, &node)?;
                     schema.complete.insert(complete.name.clone(), complete);
                 }
                 "include" => {
@@ -100,6 +134,11 @@ impl Spec {
                 k => bail_parse!(ctx, *node.node.name().span(), "unsupported spec key {k}"),
             }
         }
+        schema.cmd.name = if schema.bin.is_empty() {
+            schema.name.clone()
+        } else {
+            schema.bin.clone()
+        };
         set_subcommand_ancestors(&mut schema.cmd, &[]);
         Ok(schema)
     }
@@ -117,8 +156,11 @@ impl Spec {
         if other.about.is_some() {
             self.about = other.about;
         }
-        if other.long_about.is_some() {
-            self.long_about = other.long_about;
+        if other.about_long.is_some() {
+            self.about_long = other.about_long;
+        }
+        if other.about_md.is_some() {
+            self.about_md = other.about_md;
         }
         if !other.config.is_empty() {
             self.config.merge(&other.config);
@@ -132,7 +174,7 @@ impl Spec {
 
 fn split_script(file: &Path) -> Result<(String, String), UsageErr> {
     let full = file::read_to_string(file)?;
-    if full.contains("# |usage.jdx.dev|") {
+    if full.contains("#USAGE") {
         return Ok((extract_usage_from_comments(&full), full));
     }
     let schema = full.strip_prefix("#!/usr/bin/env usage\n").unwrap_or(&full);
@@ -149,23 +191,20 @@ fn split_script(file: &Path) -> Result<(String, String), UsageErr> {
 
 fn extract_usage_from_comments(full: &str) -> String {
     let mut usage = vec![];
-    let mut inside = false;
+    let mut found = false;
     for line in full.lines() {
-        if line.starts_with("# |usage.jdx.dev|") {
-            inside = !inside;
-            continue;
-        }
-        if inside {
-            usage.push(line.strip_prefix("# ").unwrap());
+        if line.starts_with("#USAGE") {
+            found = true;
+            usage.push(line.strip_prefix("#USAGE").unwrap().trim());
+        } else if found {
+            // if there is a gap, stop reading
+            break;
         }
     }
     usage.join("\n")
 }
 
 fn set_subcommand_ancestors(cmd: &mut SpecCommand, ancestors: &[String]) {
-    if cmd.usage.is_empty() {
-        cmd.usage = cmd.usage();
-    }
     let ancestors = ancestors.to_vec();
     for subcmd in cmd.subcommands.values_mut() {
         subcmd.full_cmd = ancestors
@@ -174,6 +213,9 @@ fn set_subcommand_ancestors(cmd: &mut SpecCommand, ancestors: &[String]) {
             .chain(once(subcmd.name.clone()))
             .collect();
         set_subcommand_ancestors(subcmd, &subcmd.full_cmd.clone());
+    }
+    if cmd.usage.is_empty() {
+        cmd.usage = cmd.usage();
     }
 }
 
@@ -206,7 +248,7 @@ impl Display for Spec {
             node.push(KdlEntry::new(about.clone()));
             nodes.push(node);
         }
-        if let Some(long_about) = &self.long_about {
+        if let Some(long_about) = &self.about_long {
             let mut node = KdlNode::new("long_about");
             node.push(KdlEntry::new(KdlValue::RawString(long_about.clone())));
             nodes.push(node);
@@ -232,6 +274,14 @@ impl Display for Spec {
     }
 }
 
+impl FromStr for Spec {
+    type Err = UsageErr;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(&Default::default(), s)
+    }
+}
+
 #[cfg(feature = "clap")]
 impl From<&clap::Command> for Spec {
     fn from(cmd: &clap::Command) -> Self {
@@ -241,7 +291,7 @@ impl From<&clap::Command> for Spec {
             cmd: cmd.into(),
             version: cmd.get_version().map(|v| v.to_string()),
             about: cmd.get_about().map(|a| a.to_string()),
-            long_about: cmd.get_long_about().map(|a| a.to_string()),
+            about_long: cmd.get_long_about().map(|a| a.to_string()),
             usage: cmd.clone().render_usage().to_string(),
             ..Default::default()
         }
@@ -251,6 +301,7 @@ impl From<&clap::Command> for Spec {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use insta::assert_snapshot;
 
     #[test]
     fn test_display() {

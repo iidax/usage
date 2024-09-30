@@ -4,9 +4,9 @@ use kdl::{KdlDocument, KdlEntry, KdlNode};
 use serde::Serialize;
 
 use crate::error::UsageErr;
-use crate::parse::context::ParsingContext;
-use crate::parse::data_types::SpecDataTypes;
-use crate::parse::helpers::NodeHelper;
+use crate::spec::context::ParsingContext;
+use crate::spec::data_types::SpecDataTypes;
+use crate::spec::helpers::NodeHelper;
 
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SpecConfig {
@@ -117,6 +117,7 @@ impl From<&SpecConfig> for KdlNode {
 #[cfg(test)]
 mod tests {
     use crate::Spec;
+    use insta::assert_snapshot;
 
     #[test]
     fn test_config_defaults() {

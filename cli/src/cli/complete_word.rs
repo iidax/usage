@@ -11,7 +11,7 @@ use once_cell::sync::Lazy;
 use xx::process::check_status;
 use xx::{XXError, XXResult};
 
-use usage::{Complete, Spec, SpecArg, SpecCommand, SpecFlag};
+use usage::{Spec, SpecArg, SpecCommand, SpecComplete, SpecFlag};
 
 use crate::cli::generate;
 
@@ -72,11 +72,9 @@ impl CompleteWord {
             ctx.insert("PREV", &(cword - 1));
         }
 
-        let parsed = usage::cli::parse(spec, &words)?;
+        let parsed = usage::parse::parse_partial(spec, &words)?;
         debug!("parsed cmd: {}", parsed.cmd.full_cmd.join(" "));
-        let choices = if !parsed.cmd.subcommands.is_empty() {
-            self.complete_subcommands(parsed.cmd, &ctoken)
-        } else if ctoken == "-" {
+        let choices = if ctoken == "-" {
             let shorts = self.complete_short_flag_names(&parsed.available_flags, "");
             let longs = self.complete_long_flag_names(&parsed.available_flags, "");
             shorts.into_iter().chain(longs).collect()
@@ -86,10 +84,15 @@ impl CompleteWord {
             self.complete_short_flag_names(&parsed.available_flags, &ctoken)
         } else if let Some(flag) = parsed.flag_awaiting_value {
             self.complete_arg(&ctx, spec, flag.arg.as_ref().unwrap(), &ctoken)?
-        } else if let Some(arg) = parsed.cmd.args.get(parsed.args.len()) {
-            self.complete_arg(&ctx, spec, arg, &ctoken)?
         } else {
-            vec![]
+            let mut choices = vec![];
+            if let Some(arg) = parsed.cmd.args.get(parsed.args.len()) {
+                choices.extend(self.complete_arg(&ctx, spec, arg, &ctoken)?);
+            }
+            if !parsed.cmd.subcommands.is_empty() {
+                choices.extend(self.complete_subcommands(&parsed.cmd, &ctoken));
+            }
+            choices
         };
         Ok(choices)
     }
@@ -123,15 +126,23 @@ impl CompleteWord {
     ) -> Vec<(String, String)> {
         debug!("complete_long_flag_names: {ctoken}");
         trace!("flags: {}", flags.keys().join(", "));
-        let ctoken = ctoken.strip_prefix("--").unwrap_or(ctoken);
         flags
             .values()
             .filter(|f| !f.hide)
-            .flat_map(|f| &f.long)
-            .unique()
-            .filter(|c| c.starts_with(ctoken))
+            .flat_map(|f| {
+                let mut flags = f
+                    .long
+                    .iter()
+                    .map(|l| (format!("--{}", l), f.help.clone().unwrap_or_default()))
+                    .collect::<Vec<_>>();
+                if let Some(negate) = &f.negate {
+                    flags.push((negate.clone(), String::new()))
+                }
+                flags
+            })
+            .unique_by(|(f, _)| f.to_string())
+            .filter(|(f, _)| f.starts_with(ctoken))
             // TODO: get flag description
-            .map(|c| (format!("--{c}"), String::new()))
             .sorted()
             .collect()
     }
@@ -172,7 +183,7 @@ impl CompleteWord {
         arg: &SpecArg,
         ctoken: &str,
     ) -> miette::Result<Vec<(String, String)>> {
-        static EMPTY_COMPL: Lazy<Complete> = Lazy::new(Complete::default);
+        static EMPTY_COMPL: Lazy<SpecComplete> = Lazy::new(SpecComplete::default);
 
         trace!("complete_arg: {arg} {ctoken}");
         let name = arg.name.to_lowercase();
@@ -184,6 +195,14 @@ impl CompleteWord {
             return Ok(builtin);
         }
 
+        if let Some(choices) = &arg.choices {
+            return Ok(choices
+                .choices
+                .iter()
+                .map(|c| (c.clone(), String::new()))
+                .filter(|(c, _)| c.starts_with(ctoken))
+                .collect());
+        }
         if let Some(run) = &complete.run {
             let run = tera::Tera::one_off(run, ctx, false).into_diagnostic()?;
             trace!("run: {run}");
