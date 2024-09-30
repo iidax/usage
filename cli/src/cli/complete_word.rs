@@ -237,7 +237,7 @@ impl CompleteWord {
             })
             .sorted()
             .collect()
-    }   
+    }
 }
 
 fn sh(script: &str) -> XXResult<String> {

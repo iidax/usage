@@ -90,12 +90,12 @@ impl Fig {
                 " [aliases: {}]",
                 cmd.aliases
                     .iter()
-                    .map(|a| format!("{}", a))
+                    .map(|a| a.to_string())
                     .collect::<Vec<_>>()
                     .join(", ")
             )
         } else {
-            format!("")
+            String::new()
         };
 
         script.push_str(&format!(
@@ -193,13 +193,15 @@ impl Fig {
         let indent_str = "  ".repeat(indent);
         script.push_str(&format!(
             "{}{{\n{}  name: \"{}\",\n",
-            indent_str,
-            indent_str,
-            arg.name,
+            indent_str, indent_str, arg.name,
         ));
         // 引数の追加情報（必須かどうかなど）を追加
         if arg.help.is_some() {
-            script.push_str(&format!("{}  description: `{}`, \n", indent_str, Self::escape_string(arg.help.as_deref().unwrap_or(""))));
+            script.push_str(&format!(
+                "{}  description: `{}`, \n",
+                indent_str,
+                Self::escape_string(arg.help.as_deref().unwrap_or(""))
+            ));
         }
         if !arg.required {
             script.push_str(&format!("{}  isOptional: true, \n", indent_str));
