@@ -209,6 +209,14 @@ impl Fig {
         if arg.var {
             script.push_str(&format!("{}  isVariadic: true,\n", indent_str));
         }
+        if let Some(spec_choices) = &arg.choices {
+            let suggestions = spec_choices.choices
+                .iter()
+                .map(|c| format!("\"{}\"", c))
+                .collect::<Vec<_>>()
+                .join(", ");
+            script.push_str(&format!("{}  suggestions: [{}],\n", indent_str, suggestions));
+        }
         if let Some(default) = &arg.default {
             script.push_str(&format!("{}  default: \"{}\",\n", indent_str, default));
         }

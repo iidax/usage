@@ -50,7 +50,9 @@ Customize status output with `status` settings."#
     $ execx($(mise activate xonsh))
 "#
     flag "-s --shell" help="Shell type to generate the script for" hide=true {
-        arg "<SHELL>"
+        arg "<SHELL>" {
+          choices "bash" "zsh" "fish"
+        }
     }
     flag "--status" help="Show \"mise: <PLUGIN>@<VERSION>\" message when changing directories" hide=true
     flag "--shims" help="Use shims instead of modifying PATH\nEffectively the same as:\n    PATH=\"$HOME/.local/share/mise/shims:$PATH\""
@@ -147,7 +149,9 @@ cmd "completion" help="Generate shell completions" {
     flag "--usage" help="Always use usage for completions.\nCurrently, usage is the default for fish and bash but not zsh since it has a few quirks\nto work out first." {
         long_help "Always use usage for completions.\nCurrently, usage is the default for fish and bash but not zsh since it has a few quirks\nto work out first.\n\nThis requires the `usage` CLI to be installed.\nhttps://usage.jdx.dev"
     }
-    arg "[SHELL]" help="Shell type to generate completions for"
+    arg "[SHELL]" help="Shell type to generate completions for" {
+      choices "bash" "zsh" "fish"
+    }
 }
 cmd "config" help="[experimental] Manage config files" {
     alias "cfg"
