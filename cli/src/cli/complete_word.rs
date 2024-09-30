@@ -18,7 +18,7 @@ use crate::cli::generate;
 #[derive(Debug, Args)]
 #[clap(visible_alias = "cw")]
 pub struct CompleteWord {
-    #[clap(long, value_parser = ["bash", "fish", "zsh", "fig"])]
+    #[clap(long, value_parser = ["bash", "fish", "zsh"])]
     shell: Option<String>,
 
     /// user's input from the command line
@@ -43,16 +43,12 @@ impl CompleteWord {
         let choices = self.complete_word(&spec)?;
         let shell = self.shell.as_deref().unwrap_or_default();
         let any_descriptions = choices.iter().any(|(_, d)| !d.is_empty());
-        if shell == "fig" {
-            self.generate_fig_script(&spec)?;
-        } else {
-            for (c, description) in choices {
-                match (any_descriptions, shell) {
-                    (true, "bash") => println!("{c}"),
-                    (true, "fish") => println!("{c}\t{description}"),
-                    (true, "zsh") => println!("{c}\\:'{description}'"),
-                    _ => println!("{c}"),
-                }
+        for (c, description) in choices {
+            match (any_descriptions, shell) {
+                (true, "bash") => println!("{c}"),
+                (true, "fish") => println!("{c}\t{description}"),
+                (true, "zsh") => println!("{c}\\:'{description}'"),
+                _ => println!("{c}"),
             }
         }
 
@@ -241,179 +237,7 @@ impl CompleteWord {
             })
             .sorted()
             .collect()
-    }
-
-    fn generate_fig_script(&self, spec: &Spec) -> miette::Result<()> {
-        let mut script = String::new();
-
-        // ヘッダー情報を追加
-        script.push_str("const completionSpec: Fig.Spec = {\n");
-        script.push_str(&format!("  name: \"{}\",\n", spec.name));
-        script.push_str(&format!(
-            "  description: `{}`,\n",
-            Self::escape_string(spec.about.as_deref().unwrap_or(""))
-        ));
-
-        // サブコマンドを追加
-        script.push_str("  subcommands: [\n");
-        for (_, subcmd) in &spec.cmd.subcommands {
-            self.add_subcommand_to_script(&mut script, subcmd, 2)?;
-        }
-        script.push_str("  ],\n");
-
-        // オプションを追加
-        script.push_str("  options: [\n");
-        for flag in &spec.cmd.flags {
-            self.add_flag_to_script(&mut script, flag, 2)?;
-        }
-        script.push_str("  ],\n");
-
-        script.push_str("};\n");
-        script.push_str("export default completionSpec;\n");
-
-        println!("{}", script);
-        Ok(())
-    }
-
-    fn add_subcommand_to_script(
-        &self,
-        script: &mut String,
-        cmd: &SpecCommand,
-        indent: usize,
-    ) -> miette::Result<()> {
-        let indent_str = "  ".repeat(indent);
-        let display_name = if !cmd.aliases.is_empty() {
-            format!("  displayName: \"{}\",\n{}", cmd.name, indent_str)
-        } else {
-            String::new()
-        };
-        let names = if !cmd.aliases.is_empty() {
-            format!(
-                "  name: [\"{}\", {}],\n{}",
-                cmd.name,
-                cmd.aliases
-                    .iter()
-                    .map(|a| format!("\"{}\"", a))
-                    .collect::<Vec<_>>()
-                    .join(", "),
-                indent_str
-            )
-        } else {
-            format!("  name: \"{}\",\n{}", cmd.name, indent_str)
-        };
-
-        script.push_str(&format!(
-            "{}{{\n{}{}{}  description: `{}`,\n",
-            indent_str,
-            indent_str,
-            display_name,
-            names,
-            Self::escape_string(cmd.help.as_deref().unwrap_or(""))
-        ));
-
-        // サブコマンドの引数を追加
-        if !cmd.args.is_empty() {
-            script.push_str(&format!("{}  args: [\n", indent_str));
-            for arg in &cmd.args {
-                self.add_arg_to_script(script, arg, indent + 2)?;
-            }
-            script.push_str(&format!("{}  ],\n", indent_str));
-        }
-
-        // サブコマンドのオプションを追加
-        if !cmd.flags.is_empty() {
-            script.push_str(&format!("{}  options: [\n", indent_str));
-            for flag in &cmd.flags {
-                self.add_flag_to_script(script, flag, indent + 2)?;
-            }
-            script.push_str(&format!("{}  ],\n", indent_str));
-        }
-
-        // サブコマンドのサブコマンドを追加
-        if !cmd.subcommands.is_empty() {
-            script.push_str(&format!("{}  subcommands: [\n", indent_str));
-            for (_, subcmd) in &cmd.subcommands {
-                self.add_subcommand_to_script(script, subcmd, indent + 2)?;
-            }
-            script.push_str(&format!("{}  ], \n", indent_str));
-        }
-
-        script.push_str(&format!("{}}},\n", indent_str));
-        Ok(())
-    }
-
-    fn add_flag_to_script(
-        &self,
-        script: &mut String,
-        flag: &SpecFlag,
-        indent: usize,
-    ) -> miette::Result<()> {
-        let indent_str = "  ".repeat(indent);
-        script.push_str(&format!(
-            "{}{{\n{}  name: [{}],\n{}  description: `{}`,\n",
-            indent_str,
-            indent_str,
-            flag.short
-                .iter()
-                .map(|s| format!("\"-{}\"", s))
-                .chain(flag.long.iter().map(|l| format!("\"--{}\"", l)))
-                .collect::<Vec<_>>()
-                .join(", "),
-            indent_str,
-            Self::escape_string(flag.help.as_deref().unwrap_or(""))
-        ));
-
-        if flag.arg.is_some() {
-            script.push_str(&format!("{}  args: [\n", indent_str));
-            // フラグの引数の詳細を追加
-            if let Some(arg) = flag.arg.as_ref() {
-                self.add_arg_to_script(script, arg, indent + 2)?;
-            }
-            script.push_str(&format!("{}  ],\n", indent_str));
-        }
-
-        script.push_str(&format!("{}}},\n", indent_str));
-        Ok(())
-    }
-
-    fn add_arg_to_script(
-        &self,
-        script: &mut String,
-        arg: &SpecArg,
-        indent: usize,
-    ) -> miette::Result<()> {
-        let indent_str = "  ".repeat(indent);
-        script.push_str(&format!(
-            "{}{{\n{}  name: \"{}\",\n{}  description: `{}`,\n",
-            indent_str,
-            indent_str,
-            arg.name,
-            indent_str,
-            Self::escape_string(arg.help.as_deref().unwrap_or(""))
-        ));
-
-        // 引数の追加情報（必須かどうかなど）を追加
-        if arg.required {
-            script.push_str(&format!("{}  isRequired: true,\n", indent_str));
-        } else {
-            script.push_str(&format!("{}  isOptional: true, \n", indent_str));
-        }
-        if arg.var {
-            script.push_str(&format!("{}  isVariadic: true,\n", indent_str));
-        }
-        if arg.hide {
-            script.push_str(&format!("{}  hidden: true, \n", indent_str));
-        }
-        if let Some(default) = &arg.default {
-            script.push_str(&format!("{}  default: \"{}\",\n", indent_str, default));
-        }
-        script.push_str(&format!("{}}},\n", indent_str));
-        Ok(())
-    }
-    // 文字列をエスケープする関数
-    fn escape_string(s: &str) -> String {
-        s.replace('`', "\\`").replace('"', "\\\"")
-    }
+    }   
 }
 
 fn sh(script: &str) -> XXResult<String> {
