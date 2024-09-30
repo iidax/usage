@@ -1,5 +1,148 @@
 # Changelog
 
+## [0.8.4](https://github.com/jdx/usage/compare/v0.8.3..v0.8.4) - 2024-09-29
+
+### 🐛 Bug Fixes
+
+- capitalize ARGS/FLAGS in md docs by [@jdx](https://github.com/jdx) in [3a314d5](https://github.com/jdx/usage/commit/3a314d5bcb7a1552a4cf2e833bd81b35a7e9e514)
+- move usage out of header by [@jdx](https://github.com/jdx) in [9a43a72](https://github.com/jdx/usage/commit/9a43a72ae26606cc9c03ee718627c1a6636d77f2)
+
+### 🔍 Other Changes
+
+- fix aur by [@jdx](https://github.com/jdx) in [56a0cf7](https://github.com/jdx/usage/commit/56a0cf7250890dd7147e41d69f3942150fdbd5d5)
+
+## [0.8.3](https://github.com/jdx/usage/compare/v0.8.2..v0.8.3) - 2024-09-28
+
+### 🐛 Bug Fixes
+
+- minor whitespace bug in md output by [@jdx](https://github.com/jdx) in [dcced73](https://github.com/jdx/usage/commit/dcced7300a3abfd2cde2eee2879d27fa30b50694)
+- added aliases to command info by [@jdx](https://github.com/jdx) in [ac745d6](https://github.com/jdx/usage/commit/ac745d66215566500faa684b93192392bf307521)
+- tweak usage output by [@jdx](https://github.com/jdx) in [c488b76](https://github.com/jdx/usage/commit/c488b76249c6ab6eb022cc022567faed82332074)
+- make html_encode optional by [@jdx](https://github.com/jdx) in [cc629ee](https://github.com/jdx/usage/commit/cc629ee36acbbd2fe9a4e69c4b3216334f356739)
+
+### 🔍 Other Changes
+
+- always remove aur repo by [@jdx](https://github.com/jdx) in [368ae97](https://github.com/jdx/usage/commit/368ae97a73ecb82fb5855fdc8610dc7e2dd17084)
+
+## [0.8.2](https://github.com/jdx/usage/compare/v0.8.1..v0.8.2) - 2024-09-28
+
+### 🐛 Bug Fixes
+
+- whitespace in md generation by [@jdx](https://github.com/jdx) in [3cb7769](https://github.com/jdx/usage/commit/3cb776920cd9bd18693cdc0e547b98b0efd25aca)
+- escape html in md by [@jdx](https://github.com/jdx) in [a691143](https://github.com/jdx/usage/commit/a6911436156c15246c69ea66e62e2745e419b813)
+- more work on html encoding md by [@jdx](https://github.com/jdx) in [b5cb342](https://github.com/jdx/usage/commit/b5cb342fa79ac70bd2723c026f3184021e5ae3ac)
+
+## [0.8.1](https://github.com/jdx/usage/compare/v0.8.0..v0.8.1) - 2024-09-28
+
+### 🐛 Bug Fixes
+
+- handle bug with usage-bin aur script by [@jdx](https://github.com/jdx) in [6e4b7a7](https://github.com/jdx/usage/commit/6e4b7a79be85d5b02285718625f6302bef75cb75)
+- improving md generation by [@jdx](https://github.com/jdx) in [#117](https://github.com/jdx/usage/pull/117)
+
+### 🔍 Other Changes
+
+- enable brew publish by [@jdx](https://github.com/jdx) in [d8cd84a](https://github.com/jdx/usage/commit/d8cd84afbf4ae21386fda4b5a01d0adeaf7839a9)
+
+## [0.8.0](https://github.com/jdx/usage/compare/v0.7.4..v0.8.0) - 2024-09-27
+
+### 🚀 Features
+
+- basic support for markdown generation in lib by [@jdx](https://github.com/jdx) in [de004c8](https://github.com/jdx/usage/commit/de004c87890bda993288503fe49e02b342c72487)
+
+### 🔍 Other Changes
+
+- enable aur publishing by [@jdx](https://github.com/jdx) in [0049e95](https://github.com/jdx/usage/commit/0049e950001bf8a9dfb350d5e675c474f6958d18)
+
+## [0.7.4](https://github.com/jdx/usage/compare/v0.7.3..v0.7.4) - 2024-09-27
+
+### 🔍 Other Changes
+
+- fix aur publishing by [@jdx](https://github.com/jdx) in [28752c3](https://github.com/jdx/usage/commit/28752c35f310bb78e45ab67c11b905e8af28b6c4)
+
+## [0.7.3](https://github.com/jdx/usage/compare/v0.7.2..v0.7.3) - 2024-09-27
+
+### 🔍 Other Changes
+
+- fix aur publishing by [@jdx](https://github.com/jdx) in [9e21529](https://github.com/jdx/usage/commit/9e21529ba1e4ed3f1ae4c69a480cf801ff311c1a)
+
+## [0.7.2](https://github.com/jdx/usage/compare/v0.7.1..v0.7.2) - 2024-09-27
+
+### 🔍 Other Changes
+
+- set GITHUB_TOKEN by [@jdx](https://github.com/jdx) in [fc7d06f](https://github.com/jdx/usage/commit/fc7d06ff15ca7b72d421fd3706c22b9e632b2224)
+- fix codesign config by [@jdx](https://github.com/jdx) in [cf0b731](https://github.com/jdx/usage/commit/cf0b7311806d60b9d1e79c671958205156818311)
+
+## [0.7.1](https://github.com/jdx/usage/compare/v0.7.0..v0.7.1) - 2024-09-27
+
+### 🐛 Bug Fixes
+
+- fail parsing if required args/flags not found by [@jdx](https://github.com/jdx) in [409145a](https://github.com/jdx/usage/commit/409145ae5db937bffa121e63f00f8f827c49b294)
+
+### 🔍 Other Changes
+
+- publish aur releases by [@jdx](https://github.com/jdx) in [#109](https://github.com/jdx/usage/pull/109)
+- move tasks dir by [@jdx](https://github.com/jdx) in [8cb8cc3](https://github.com/jdx/usage/commit/8cb8cc348dbb04f3c41f3ca22c518f82dfa27830)
+- install cargo-binstall before installing mise by [@jdx](https://github.com/jdx) in [6240460](https://github.com/jdx/usage/commit/62404602e602a1c7d578b5764703f0820c45299e)
+
+## [0.7.0](https://github.com/jdx/usage/compare/v0.6.0..v0.7.0) - 2024-09-27
+
+### 🚀 Features
+
+- implemented choices for args/flags by [@jdx](https://github.com/jdx) in [#107](https://github.com/jdx/usage/pull/107)
+
+### 🔍 Other Changes
+
+- clean up pub exports by [@jdx](https://github.com/jdx) in [9996ab8](https://github.com/jdx/usage/commit/9996ab8ca041d27a0754096fe7b04ebd3958431b)
+
+## [0.6.0](https://github.com/jdx/usage/compare/v0.5.1..v0.6.0) - 2024-09-26
+
+### 🚀 Features
+
+- negate by [@jdx](https://github.com/jdx) in [5d1b817](https://github.com/jdx/usage/commit/5d1b817d143227a03651502b7671c9b2853c92eb)
+- negate by [@jdx](https://github.com/jdx) in [16f754d](https://github.com/jdx/usage/commit/16f754d1925c561198291b304cbf80c9ab2a4dee)
+- mount by [@jdx](https://github.com/jdx) in [99530f4](https://github.com/jdx/usage/commit/99530f4682140e2b64f2625d844b840925e3d6ae)
+
+### 🐛 Bug Fixes
+
+- remove debug statements by [@jdx](https://github.com/jdx) in [664b592](https://github.com/jdx/usage/commit/664b592f4d8f7b96f24d3bb2ca2803df36fda512)
+- export SpecMount by [@jdx](https://github.com/jdx) in [b44c4f1](https://github.com/jdx/usage/commit/b44c4f15c77dee10e59c136b52f52a844f4ee655)
+
+### 🔍 Other Changes
+
+- migrate away from deprecated git-cliff syntax by [@jdx](https://github.com/jdx) in [3062df9](https://github.com/jdx/usage/commit/3062df94a9ad7af3a2e57ba5e5e35d299daa6718)
+
+## [0.5.1](https://github.com/jdx/usage/compare/v0.5.0..v0.5.1) - 2024-09-25
+
+### 🐛 Bug Fixes
+
+- bail instead of panic on CLI parse error by [@jdx](https://github.com/jdx) in [b935cca](https://github.com/jdx/usage/commit/b935ccae9a442378c71182293cd24380fdadf744)
+
+## [0.5.0](https://github.com/jdx/usage/compare/v0.4.0..v0.5.0) - 2024-09-25
+
+### 🚀 Features
+
+- added .as_env() to CLI parser by [@jdx](https://github.com/jdx) in [b1f6617](https://github.com/jdx/usage/commit/b1f66179b70a4bcdc6792add24a7b62e1afdd81d)
+- added Spec::parse_script fn by [@jdx](https://github.com/jdx) in [124a705](https://github.com/jdx/usage/commit/124a7050c6b1b5bb502049204556b74b6e8a4b71)
+
+## [0.4.0](https://github.com/jdx/usage/compare/v0.3.1..v0.4.0) - 2024-09-25
+
+### 🚀 Features
+
+- add comment syntax for file scripts by [@jdx](https://github.com/jdx) in [ee75493](https://github.com/jdx/usage/commit/ee7549303a0cf63c5da8257287be21d0af85ce86)
+
+### 🐛 Bug Fixes
+
+- tweak comment syntax by [@jdx](https://github.com/jdx) in [dfff6e2](https://github.com/jdx/usage/commit/dfff6e2daaafb47200a32d4654482beabbe2f343)
+
+### 📚 Documentation
+
+- update flag syntax by [@jdx](https://github.com/jdx) in [a67de2e](https://github.com/jdx/usage/commit/a67de2e6e855b24d340d559ded9e1464f95c2894)
+
+### 📦️ Dependency Updates
+
+- update rust crate serde to v1.0.210 by [@renovate[bot]](https://github.com/renovate[bot]) in [#102](https://github.com/jdx/usage/pull/102)
+- update rust crate clap to v4.5.18 by [@renovate[bot]](https://github.com/renovate[bot]) in [#101](https://github.com/jdx/usage/pull/101)
+
 ## [0.3.1](https://github.com/jdx/usage/compare/v0.3.0..v0.3.1) - 2024-08-28
 
 ### 🐛 Bug Fixes

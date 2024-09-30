@@ -1,0 +1,23 @@
+{%- set about = spec.about_long | default(value=spec.about) %}
+{%- set cmd = spec.cmd %}
+{%- set full_cmd = cmd.full_cmd | join(sep=" ") %}
+{{- "#" | repeat(count=header_level) }} `{{ spec.bin ~ " " ~ full_cmd | trim }}`
+
+{%- if spec.version %}
+* **version**: {{ spec.version }}{% endif %}
+
+{%- if about %}
+
+{{ about }}
+{% endif %}
+
+{%- include "cmd_template.md.tera" %}
+{%- set header_level = header_level + 1 %}
+
+{%- for cmd in all_commands %}
+{%- set full_cmd = cmd.full_cmd | join(sep=" ") %}
+
+{{ "#" | repeat(count=header_level) }} `{{ spec.bin ~ " " ~ full_cmd | trim }}`
+
+{%- include "cmd_template.md.tera" %}
+{%- endfor -%}

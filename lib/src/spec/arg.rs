@@ -1,28 +1,31 @@
+#[cfg(feature = "clap")]
+use itertools::Itertools;
+use kdl::{KdlDocument, KdlEntry, KdlNode};
+use serde::Serialize;
 use std::fmt::Display;
 use std::hash::Hash;
 use std::str::FromStr;
 
-#[cfg(feature = "clap")]
-use itertools::Itertools;
-use kdl::{KdlEntry, KdlNode};
-use serde::Serialize;
-
 use crate::error::UsageErr;
-use crate::parse::context::ParsingContext;
-use crate::parse::helpers::NodeHelper;
+use crate::spec::context::ParsingContext;
+use crate::spec::helpers::NodeHelper;
+use crate::{string, SpecChoices};
 
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct SpecArg {
     pub name: String,
     pub usage: String,
     pub help: Option<String>,
-    pub long_help: Option<String>,
+    pub help_long: Option<String>,
+    pub help_md: Option<String>,
+    pub help_first_line: Option<String>,
     pub required: bool,
     pub var: bool,
     pub var_min: Option<usize>,
     pub var_max: Option<usize>,
     pub hide: bool,
     pub default: Option<String>,
+    pub choices: Option<SpecChoices>,
 }
 
 impl SpecArg {
@@ -31,7 +34,9 @@ impl SpecArg {
         for (k, v) in node.props() {
             match k {
                 "help" => arg.help = Some(v.ensure_string()?),
-                "long_help" => arg.long_help = Some(v.ensure_string()?),
+                "long_help" => arg.help_long = Some(v.ensure_string()?),
+                "help_long" => arg.help_long = Some(v.ensure_string()?),
+                "help_md" => arg.help_md = Some(v.ensure_string()?),
                 "required" => arg.required = v.ensure_bool()?,
                 "var" => arg.var = v.ensure_bool()?,
                 "hide" => arg.hide = v.ensure_bool()?,
@@ -41,13 +46,22 @@ impl SpecArg {
                 k => bail_parse!(ctx, *v.entry.span(), "unsupported arg key {k}"),
             }
         }
+        for child in node.children() {
+            match child.name() {
+                "choices" => arg.choices = Some(SpecChoices::parse(ctx, &child)?),
+                k => bail_parse!(ctx, *child.node.name().span(), "unsupported arg child {k}"),
+            }
+        }
         arg.usage = arg.usage();
+        if let Some(help) = &arg.help {
+            arg.help_first_line = Some(string::first_line(help));
+        }
         Ok(arg)
     }
 }
 
 impl SpecArg {
-    pub(crate) fn usage(&self) -> String {
+    pub fn usage(&self) -> String {
         let mut name = if self.required {
             format!("<{}>", self.name)
         } else {
@@ -67,8 +81,11 @@ impl From<&SpecArg> for KdlNode {
         if let Some(desc) = &arg.help {
             node.push(KdlEntry::new_prop("help", desc.clone()));
         }
-        if let Some(desc) = &arg.long_help {
-            node.push(KdlEntry::new_prop("long_help", desc.clone()));
+        if let Some(desc) = &arg.help_long {
+            node.push(KdlEntry::new_prop("help_long", desc.clone()));
+        }
+        if let Some(desc) = &arg.help_md {
+            node.push(KdlEntry::new_prop("help_md", desc.clone()));
         }
         if arg.var {
             node.push(KdlEntry::new_prop("var", true));
@@ -84,6 +101,10 @@ impl From<&SpecArg> for KdlNode {
         }
         if let Some(default) = &arg.default {
             node.push(KdlEntry::new_prop("default", default.clone()));
+        }
+        if let Some(choices) = &arg.choices {
+            let children = node.children_mut().get_or_insert_with(KdlDocument::new);
+            children.nodes_mut().push(choices.into());
         }
         node
     }
@@ -127,7 +148,8 @@ impl From<&clap::Arg> for SpecArg {
     fn from(arg: &clap::Arg) -> Self {
         let required = arg.is_required_set();
         let help = arg.get_help().map(|s| s.to_string());
-        let long_help = arg.get_long_help().map(|s| s.to_string());
+        let help_long = arg.get_long_help().map(|s| s.to_string());
+        let help_first_line = help.as_ref().map(|s| string::first_line(s));
         let hide = arg.is_hide_set();
         let var = matches!(
             arg.get_action(),
@@ -144,7 +166,9 @@ impl From<&clap::Arg> for SpecArg {
             usage: "".into(),
             required,
             help,
-            long_help,
+            help_long,
+            help_md: None,
+            help_first_line,
             var,
             var_max: None,
             var_min: None,
@@ -159,6 +183,7 @@ impl From<&clap::Arg> for SpecArg {
                         .join("|"),
                 )
             },
+            choices: None, // TODO: pull from clap
         }
     }
 }

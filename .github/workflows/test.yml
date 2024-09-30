@@ -9,6 +9,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   MISE_EXPERIMENTAL: 1
 
 jobs:
@@ -21,6 +22,7 @@ jobs:
         with:
           shared-key: test
           save-if: ${{ github.ref_name == 'main' }}
+      - uses: taiki-e/install-action@cargo-binstall
       - uses: jdx/mise-action@v2
       - run: mise r build
       - run: mise r test

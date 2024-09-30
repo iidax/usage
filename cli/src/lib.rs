@@ -1,8 +1,6 @@
 #[macro_use]
 extern crate log;
-#[macro_use]
 extern crate miette;
-#[macro_use]
 extern crate xx;
 
 use std::path::PathBuf;
@@ -12,7 +10,7 @@ use miette::Result;
 use cli::Cli;
 
 mod cli;
-mod env;
+pub mod env;
 mod errors;
 mod hash;
 mod shebang;
